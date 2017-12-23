@@ -39,7 +39,7 @@ The Gods' Mortal Board Room~
 room.  Any God can easily post and read messages from the mortal board room
 without being seen by any mortals.  The Immortal Board Room is to the west.
 ~
-12 d 0 
+12 d 0
 D3
 The Immortal Board Room can be seen to the west.
 ~
@@ -116,4 +116,4 @@ didn't notice that exit before isn't it?
 ~
 0 -1 1204
 S
-$
+$~

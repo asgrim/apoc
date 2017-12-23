@@ -4,3 +4,4 @@ config.status
 *.o
 .vscode
 lib/plrobjs/*/*.objs
+cmake-build-debug

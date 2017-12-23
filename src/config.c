@@ -292,7 +292,7 @@ int auto_save_olc = 1;
  * This will make the mud look for a file called socials.new,
  * which is in a different format than the stock socials file.
  */
-int use_new_socials = 0;
+int use_new_socials = 1;
 
 const char *MENU =
 "\r\n"
