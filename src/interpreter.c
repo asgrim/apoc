@@ -192,6 +192,7 @@ ACMD(do_write);
 ACMD(do_zreset);
 
 struct command_info *complete_cmd_info;
+void enter_game(struct descriptor_data *d);
 
 /* This is the Master Command List(tm).
 
@@ -1486,13 +1487,10 @@ void nanny(struct descriptor_data *d, char *arg)
     break;
 
   case CON_RMOTD:		/* read CR after printing motd   */
-    write_to_output(d, "%s", CONFIG_MENU);
-    STATE(d) = CON_MENU;
+    enter_game(d);
     break;
 
   case CON_MENU: {		/* get selection from main menu  */
-    room_vnum load_room;
-
     switch (*arg) {
     case '0':
       write_to_output(d, "Goodbye.\r\n");
@@ -1500,56 +1498,7 @@ void nanny(struct descriptor_data *d, char *arg)
       break;
 
     case '1':
-      reset_char(d->character);
-      read_aliases(d->character);
-
-      if (PLR_FLAGGED(d->character, PLR_INVSTART))
-	GET_INVIS_LEV(d->character) = GET_LEVEL(d->character);
-
-      /*
-       * We have to place the character in a room before equipping them
-       * or equip_char() will gripe about the person in NOWHERE.
-       */
-      if ((load_room = GET_LOADROOM(d->character)) != NOWHERE)
-	load_room = real_room(load_room);
-
-      /* If char was saved with NOWHERE, or real_room above failed... */
-      if (load_room == NOWHERE) {
-	if (GET_LEVEL(d->character) >= LVL_IMMORT)
-	  load_room = r_immort_start_room;
-	else
-	  load_room = r_mortal_start_room;
-      }
-
-      if (PLR_FLAGGED(d->character, PLR_FROZEN))
-	load_room = r_frozen_start_room;
-
-      send_to_char(d->character, "%s", CONFIG_WELC_MESSG);
-      d->character->next = character_list;
-      character_list = d->character;
-      char_to_room(d->character, load_room);
-      load_result = Crash_load(d->character);
-
-      /* Clear their load room if it's not persistant. */
-      if (!PLR_FLAGGED(d->character, PLR_LOADROOM))
-        GET_LOADROOM(d->character) = NOWHERE;
-      save_char(d->character);
-
-      act("$n has entered the game.", TRUE, d->character, 0, 0, TO_ROOM);
-
-      STATE(d) = CON_PLAYING;
-      if (GET_LEVEL(d->character) == 0) {
-	do_start(d->character);
-	send_to_char(d->character, "%s", CONFIG_START_MESSG);
-      }
-      look_at_room(d->character, 0);
-      if (has_mail(GET_IDNUM(d->character)))
-	send_to_char(d->character, "You have mail waiting.\r\n");
-      if (load_result == 2) {	/* rented items lost */
-	send_to_char(d->character, "\r\n\007You could not afford your rent!\r\n"
-		"Your possesions have been donated to the Salvation Army!\r\n");
-      }
-      d->has_prompt = 0;
+      enter_game(d);
       break;
 
     case '2':
@@ -1658,4 +1607,61 @@ void nanny(struct descriptor_data *d, char *arg)
     STATE(d) = CON_DISCONNECT;	/* Safest to do. */
     break;
   }
+}
+
+void enter_game(struct descriptor_data *d)
+{
+  room_vnum load_room;
+  int load_result;
+
+  reset_char(d->character);
+  read_aliases(d->character);
+
+  if (PLR_FLAGGED(d->character, PLR_INVSTART))
+    GET_INVIS_LEV(d->character) = GET_LEVEL(d->character);
+
+  /*
+   * We have to place the character in a room before equipping them
+   * or equip_char() will gripe about the person in NOWHERE.
+   */
+  if ((load_room = GET_LOADROOM(d->character)) != NOWHERE)
+    load_room = real_room(load_room);
+
+  /* If char was saved with NOWHERE, or real_room above failed... */
+  if (load_room == NOWHERE) {
+    if (GET_LEVEL(d->character) >= LVL_IMMORT)
+      load_room = r_immort_start_room;
+    else
+      load_room = r_mortal_start_room;
+  }
+
+  if (PLR_FLAGGED(d->character, PLR_FROZEN))
+    load_room = r_frozen_start_room;
+
+  send_to_char(d->character, "%s", CONFIG_WELC_MESSG);
+  d->character->next = character_list;
+  character_list = d->character;
+  char_to_room(d->character, load_room);
+  load_result = Crash_load(d->character);
+
+  /* Clear their load room if it's not persistant. */
+  if (!PLR_FLAGGED(d->character, PLR_LOADROOM))
+    GET_LOADROOM(d->character) = NOWHERE;
+  save_char(d->character);
+
+  act("$n has entered the game.", TRUE, d->character, 0, 0, TO_ROOM);
+
+  STATE(d) = CON_PLAYING;
+  if (GET_LEVEL(d->character) == 0) {
+    do_start(d->character);
+    send_to_char(d->character, "%s", CONFIG_START_MESSG);
+  }
+  look_at_room(d->character, 0);
+  if (has_mail(GET_IDNUM(d->character)))
+    send_to_char(d->character, "You have mail waiting.\r\n");
+  if (load_result == 2) {	/* rented items lost */
+    send_to_char(d->character, "\r\n\007You could not afford your rent!\r\n"
+            "Your possesions have been donated to the Salvation Army!\r\n");
+  }
+  d->has_prompt = 0;
 }
